@@ -1,42 +1,55 @@
+import switchControl as switch
 import socket
 import time
 
-host = '220.69.172.43' # 호스트 ip를 적어주세요
+host = '220.69.172.128' # 호스트 ip를 적어주세요
 port = 8080            # 포트번호를 임의로 설정해주세요
+result = ''
 
 try :
     server_sock = socket.socket(socket.AF_INET)
     server_sock.bind((host, port))
     server_sock.listen(1)
     out_data = int(10)
-except socket.eroor as err:
+except socket.error as err:
     print('error')
 
 print("기다리는 중..")
 
-while True:
-    client_sock, addr = server_sock.accept()
-    print('Connect with' + addr[0] + ":" + str(addr[1]))
-    buf = client_sock.recv(1028)
-    print(buf)
+try:
+    switch.initSwitchControl()
 
+    while True:
+        client_sock, addr = server_sock.accept()
 
+        if client_sock:
+            print('Connect with' + addr[0] + ":" + str(addr[1]))
+            buf = client_sock.recv(512)
+            print(type(buf))
 
+            # decode bytes to string
+            result = buf.decode('utf-8')
+            print(result)
+            
+            # 순서대로 ON
+            # switch.individualSwitchControl()
 
+            # 실시간 스위치 제어
+            switch.realtimeSwitchControl(result)
 
-# while True: #안드로이드에서 연결 버튼 누를 때까지 기다림
-#     client_sock, addr = server_sock.accept() # 연결 승인
+            # 한번에 모든 전원 제어 (안드로이드 버튼 추가 개발 필요)
+            # switch.allSwitchOn()
+            # switch.time.sleep(2)
+            # switch.allSwitchOff()
 
-#     if client_sock: #client_sock 가 null 값이 아니라면 (연결 승인 되었다면)
-#         print('Connected by?!', addr) #연결주소 print
-#         in_data = client_sock.recv(1024) #안드로이드에서 "refresh" 전송
-#         print('rcv :', in_data.decode("utf-8"), len(in_data)) #전송 받은값 디코딩
-
-#         while in_data : #2초마다 안드로이드에 값을 전달함 (추후 , STOP , Connect 옵션 설정 가능)
-#             client_sock.send(str(out_data).encode("utf-8")) # int 값을 string 으로 인코딩해서 전송, byte 로 전송하면 복잡함
-#             print('send :', out_data)
-#             out_data = out_data+1 #전송값 +1
-#             time.sleep(2)
+except KeyboardInterrupt:
+    switch.GPIO.cleanup()
+    client_sock.close()
+    server_sock.close()
+    pass
 
 client_sock.close()
 server_sock.close()
+
+
+
